@@ -41,6 +41,7 @@ function streamKeyboard(botUsername: string, tgId: number): InlineKeyboard {
 
 // Картинки-маскоты (положить файлы сюда).
 const WELCOME_IMAGE = fileURLToPath(new URL('../assets/hugin-welcome.png', import.meta.url));
+const ALREADY_IMAGE = fileURLToPath(new URL('../assets/hugin-already.png', import.meta.url));
 const ACCESS_IMAGE = fileURLToPath(new URL('../assets/hugin-access.png', import.meta.url));
 
 bot.command('start', async (ctx) => {
@@ -66,10 +67,13 @@ bot.command('start', async (ctx) => {
   // Уже в потоке — повторно не записываем.
   if (user.state === 'in_stream' && user.stream_id && user.seat) {
     const { data: s } = await db.from('streams').select('*').eq('id', user.stream_id).single();
-    await ctx.reply(texts.alreadyInStreamCard(s!.number, user.seat, s!.size), {
-      parse_mode: 'HTML',
-      reply_markup: streamKeyboard(me.username, from.id),
-    });
+    const caption = texts.alreadyInStreamCard(s!.number, user.seat, s!.size);
+    const kb = streamKeyboard(me.username, from.id);
+    if (existsSync(ALREADY_IMAGE)) {
+      await ctx.replyWithPhoto(new InputFile(ALREADY_IMAGE), { caption, parse_mode: 'HTML', reply_markup: kb });
+    } else {
+      await ctx.reply(caption, { parse_mode: 'HTML', reply_markup: kb });
+    }
     return;
   }
 
